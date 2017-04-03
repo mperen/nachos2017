@@ -1,6 +1,10 @@
 package nachos.threads;
 
 import nachos.machine.*;
+import java.util.Collection;
+import java.util.TreeMap;
+import java.util.Map;
+import java.util.Iterator;
 
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
@@ -14,6 +18,9 @@ public class Alarm {
      * <p><b>Note</b>: Nachos will not function correctly with more than one
      * alarm.
      */
+
+    private TreeMap<Long,KThread> sleepQueue = new TreeMap<Long,KThread>();
+
     public Alarm() {
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
@@ -27,7 +34,54 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
+
+
+    //System.out.println("beggining of the timeInterrupt " + Machine.timer().getTime());
+
+    boolean intStatus = Machine.interrupt().disable();
+/*
+    for(Map.Entry<Long,KThread> entry : sleepQueue.entrySet()) {
+
+        KThread sleepingThread = entry.getValue();
+        Long wakeUpTime = entry.getKey();
+
+        if (wakeUpTime <= Machine.timer().getTime()){
+            System.out.println("wakeUp time =  " + wakeUpTime);
+            System.out.println("is the for in timerInterrupt working? " + Machine.timer().getTime());
+            sleepingThread.ready();
+            sleepQueue.remove(wakeUpTime);
+            System.out.println("thread succesfully removed from sleeping queue" + Machine.timer().getTime());
+        }
+
+        else break;
+
+    }*/
+
+    Iterator<Map.Entry<Long, KThread>> iter = sleepQueue.entrySet().iterator();
+    Map.Entry<Long, KThread> entry;
+    while (iter.hasNext()) {
+        entry = iter.next();
+        KThread sleepingThread = entry.getValue();
+        Long wakeUpTime = entry.getKey();
+
+        if (wakeUpTime <= Machine.timer().getTime()){
+            //System.out.println("wakeUp time =  " + wakeUpTime);
+            //System.out.println("is the for in timerInterrupt working? " + Machine.timer().getTime());
+            sleepingThread.ready();
+            iter.remove();
+            break;
+
+            //System.out.println("thread succesfully removed from sleeping queue" + Machine.timer().getTime());
+        }
+        else break;
+
+    }
+
+    Machine.interrupt().restore(intStatus);
+
+    //System.out.println("end of the timeInterrupt " + Machine.timer().getTime());
+
+	//KThread.currentThread().yield();
     }
 
     /**
@@ -46,8 +100,23 @@ public class Alarm {
      */
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
+
+    boolean intStatus = Machine.interrupt().disable();
+    //System.out.println("beggining of the waitUntil " + Machine.timer().getTime());
+
 	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+    
+    
+
+    KThread currThread = KThread.currentThread();
+    sleepQueue.put(wakeTime,currThread);
+    currThread.sleep();
+
+    Machine.interrupt().restore(intStatus);
+
+    //System.out.println("end of the waitUntil " + Machine.timer().getTime());
+
+	/*while (wakeTime > Machine.timer().getTime())
+	    KThread.yield();*/
     }
 }

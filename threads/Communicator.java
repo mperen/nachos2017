@@ -13,7 +13,20 @@ public class Communicator {
     /**
      * Allocate a new communicator.
      */
+    Private Lock lock;
+    Private Condition speaker, listener;
+    Private int activeSpeakers;
+    Private int waitingSpeakers;
+    Private int activeListeners;
+    Private int waitingListeners;
+
     public Communicator() {
+        speaker = new Condition(lock);
+        listener = new Condition(lock);
+        activeSpekaers = 0;
+        waitingSpeakers = 0;
+        activeListeners = 0;
+        waitingListeners = 0;
     }
 
     /**
@@ -27,6 +40,10 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
+        lock.acquire();
+        while(activeSpeakers > 0){
+            
+        }
     }
 
     /**

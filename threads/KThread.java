@@ -43,6 +43,9 @@ public class KThread {
      * create an idle thread as well.
      */
     public KThread() {
+        boolean status = Machine.interrupt().disable();
+		joinQueue.acquire(this);
+		Machine.interrupt().restore(status);
 	if (currentThread != null) {
 	    tcb = new TCB();
 	}	    
@@ -194,6 +197,11 @@ public class KThread {
 
 	currentThread.status = statusFinished;
 	
+    KThread queuedThreads;
+		while ((queuedThreads = currentThread.joinQueue.nextThread()) != null) {
+			queuedThreads.ready();
+		}
+
 	sleep();
     }
 
@@ -277,7 +285,18 @@ public class KThread {
 
 	Lib.assertTrue(this != currentThread);
 
+    boolean intStatus = Machine.interrupt().disable();
+
+    if (currentThread.status != statusFinished) {
+        joinQueue.waitForAccess(currentThread);
+        KThread.sleep();
     }
+        
+
+    Machine.interrupt().restore(intStatus);
+    }
+
+    
 
     /**
      * Create the idle thread. Whenever there are no threads ready to be run,
@@ -403,8 +422,15 @@ public class KThread {
     public static void selfTest() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest");
 	
-	new KThread(new PingTest(1)).setName("forked thread").fork();
-	new PingTest(0).run();
+	//Join JoinTest = new Join();
+
+    //JoinTest.Test();
+
+    AlarmTests alarmtest = new AlarmTests();
+    alarmtest.test();
+
+
+
     }
 
     private static final char dbgThread = 't';
@@ -444,4 +470,96 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+    private ThreadQueue joinQueue = ThreadedKernel.scheduler.newThreadQueue(true);
+
+
+    public static class AlarmTests {
+		public static void test() {
+			KThread t1 = new KThread(new Runnable() {
+				public void run() {
+					for (int i = 0; i < 15; i++) {
+						System.out.println("t1");
+						ThreadedKernel.alarm.waitUntil(9000000);
+                        System.out.println("back from waiting after " + Machine.timer().getTime());
+					}
+				}
+			});
+
+			KThread t2 = new KThread(new Runnable() {
+				public void run() {
+					for (int i = 0; i < 15; i++) {
+						System.out.println("t2");
+						ThreadedKernel.alarm.waitUntil(6000000);
+                        System.out.println("back from waiting after " + Machine.timer().getTime());
+					}
+				}
+			});
+
+			System.out.println("Waiting a while before starting test");
+			ThreadedKernel.alarm.waitUntil(9000000);
+			System.out.println("starting test");
+			t2.fork();
+			t1.fork();
+			t2.join();
+			t1.join();
+		}
+	}
+
+
+	public static class Join
+	{
+		public static void Test(){
+			KThread t1 = new KThread(new ChildThread());
+			t1.setName("t1");
+			KThread t2 = new KThread(new ParentThread(t1));
+			t2.setName("t2");
+			
+			
+			KThread t3 = new KThread(new ParentThread(null));
+            t3.setName("t3");
+			t3.fork();
+			t2.fork();
+			t1.fork();
+			
+			try {
+				t3.join();
+			} catch (Exception e) {
+
+			}
+		}
+		private static class ParentThread implements Runnable{
+			private KThread child;
+			
+			public ParentThread(KThread c){
+				this.child = c;
+			}
+
+			@Override
+			public void run() {
+				for (int i = 0; i < 5; i++){
+					System.out.println("Hello my name is "+KThread.currentThread().getName());
+					if(i == 3 && this.child != null){
+						System.out.println("Joining "+this.child.getName()+", i'm going to sleep");
+						System.out.println("time " + Machine.timer().getTime());
+						this.child.join();
+                        System.out.println("time " + Machine.timer().getTime());
+						System.out.println(KThread.currentThread().getName()+" says: I'M BACK!");
+					}
+					KThread.yield();
+				}
+			}
+		}
+		
+		private static class ChildThread implements Runnable{
+			@Override
+			public void run() {
+				Alarm a = ThreadedKernel.alarm;
+				a.waitUntil(500);
+				for (int i = 0; i < 5; i++){
+					System.out.println("Hello my name is "+KThread.currentThread().getName());
+				}
+			}
+		}
+	}
+
 }
