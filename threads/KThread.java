@@ -480,6 +480,7 @@ public class KThread {
 					for (int i = 0; i < 15; i++) {
 						System.out.println("t1");
 						ThreadedKernel.alarm.waitUntil(9000000);
+                     //   System.out.println("this is the WAKETIME: "+ThreadedKernel.alarm.timeToWake);
                         System.out.println("back from waiting after " + Machine.timer().getTime());
 					}
 				}

@@ -20,6 +20,7 @@ public class Alarm {
      */
 
     private TreeMap<Long,KThread> sleepQueue = new TreeMap<Long,KThread>();
+    public long timeToWake = 0;
 
     public Alarm() {
 	Machine.timer().setInterruptHandler(new Runnable() {
@@ -64,8 +65,9 @@ public class Alarm {
         KThread sleepingThread = entry.getValue();
         Long wakeUpTime = entry.getKey();
 
-        if (wakeUpTime <= Machine.timer().getTime()){
-            //System.out.println("wakeUp time =  " + wakeUpTime);
+       // if (wakeUpTime <= Machine.timer().getTime()){
+        if(wakeUpTime <= Machine.timer().getTime()){
+            System.out.println("wakeUp time =  " + wakeUpTime);
             //System.out.println("is the for in timerInterrupt working? " + Machine.timer().getTime());
             sleepingThread.ready();
             iter.remove();
@@ -105,11 +107,17 @@ public class Alarm {
     //System.out.println("beggining of the waitUntil " + Machine.timer().getTime());
 
 	long wakeTime = Machine.timer().getTime() + x;
-    
+   // timeToWake = wakeTime;
     
 
     KThread currThread = KThread.currentThread();
-    sleepQueue.put(wakeTime,currThread);
+    if(!sleepQueue.containsKey(wakeTime)){
+        sleepQueue.put(wakeTime,currThread);
+        
+    }else{
+        sleepQueue.put(wakeTime+1000,currThread);
+    }
+    
     currThread.sleep();
 
     Machine.interrupt().restore(intStatus);

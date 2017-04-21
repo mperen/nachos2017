@@ -13,7 +13,7 @@ public class Communicator {
     /**
      * Allocate a new communicator.
      */
-    Private Lock lock;
+  /* Private Lock lock;
     Private Condition speaker, listener;
     Private int activeSpeakers;
     Private int waitingSpeakers;
@@ -26,8 +26,8 @@ public class Communicator {
         activeSpekaers = 0;
         waitingSpeakers = 0;
         activeListeners = 0;
-        waitingListeners = 0;
-    }
+        waitingListeners = 0;*/
+   // }
 
     /**
      * Wait for a thread to listen through this communicator, and then transfer
@@ -40,10 +40,11 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
-        lock.acquire();
-        while(activeSpeakers > 0){
+        //lock.acquire();
+       /* while(activeSpeakers > 0){
             
-        }
+        }*/
+        int x=0;
     }
 
     /**
@@ -53,6 +54,6 @@ public class Communicator {
      * @return	the integer transferred.
      */    
     public int listen() {
-	return 0;
+	 return 0;
     }
 }
